@@ -1,6 +1,8 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import cardComp from '@/components/cardComp.vue'
+import mainComp from '@/components/mainComp.vue'
+import authorComp from '@/components/authorComp.vue'
 import { supabase } from '@/lib/supabase'
 
 const materias = ref([])
@@ -14,19 +16,48 @@ onMounted(async () => {
   if (!error) materias.value = data
   else console.error(error)
 })
+
+const autores = ref([])
+
+onMounted(async () => {
+  const { data, error } = await supabase.from('Author').select('*')
+
+  if (!error) autores.value = data
+  else console.error(error)
+})
+
+const destaque = computed(() => materias.value.find((m) => m.id === 21))
+const outros = computed(() => materias.value.filter((m) => m.id !== 21))
 </script>
 
 <template>
-  <main class="max-w-6xl mx-auto p-6">
-    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+  <main class="flex flex-col max-w-5xl mx-auto p-6 gap-4">
+    <div class="grid grid-cols-2 md:flex md:flex-row justify-between">
+      <!-- autores -->
+      <authorComp v-for="a in autores" :key="a.id" :name="a.name" :image="a.avatar" :bio="a.bio" />
+    </div>
+    <hr class="border-hr" />
+    <!-- destaque -->
+    <mainComp
+      v-if="destaque"
+      :id="destaque.id"
+      :title="destaque.title"
+      :text="destaque.short_summary"
+      :image="destaque.cover"
+      :category="destaque.category"
+      :topics="destaque.topics"
+    />
+
+    <!-- grid de outros -->
+    <div class="grid pt-2 gap-x-10 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
       <cardComp
-        v-for="m in materias"
+        v-for="m in outros.slice(0, 3)"
         :key="m.id"
         :id="m.id"
         :title="m.title"
-        :text="m.summary"
         :image="m.cover"
         :category="m.category"
+        :topics="m.topics"
       />
     </div>
   </main>

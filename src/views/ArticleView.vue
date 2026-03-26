@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { marked } from 'marked'
 
 import AudioPlayer from '@/components/AudioPlayer.vue'
+import likeComp from '@/components/likeComp.vue'
+import commentComp from '@/components/commentComp.vue'
 
 const route = useRoute()
 const article = ref(null)
@@ -17,7 +19,6 @@ async function load() {
   article.value = data
 }
 
-// roda ao entrar e sempre que mudar
 watch(() => route.params.id, load, { immediate: true })
 
 const html = computed(() => (article.value ? marked(article.value.content) : ''))
@@ -25,6 +26,7 @@ const html = computed(() => (article.value ? marked(article.value.content) : '')
 
 <template>
   <main v-if="article" class="max-w-3xl mx-auto p-6">
+    <p class="font-sans font-semibold text-xs">{{ article.category.replaceAll('/', ' > ') }}</p>
     <h1 class="text-3xl font-serif font-bold mb-6">{{ article.title }}</h1>
     <p class="font-sans font-bold">Por {{ article.author }}</p>
     <p class="font-sans text-base text-text-gray">
@@ -37,7 +39,9 @@ const html = computed(() => (article.value ? marked(article.value.content) : '')
         })
       }}
     </p>
-    <hr class="border-text-gray" />
+    <hr class="border-hr" />
+    <likeComp :articleId="article.id" />
+    <commentComp :articleId="article.id" />
     <br />
     <p class="font-sans prose-lg max-w-none text-justify">{{ article.summary }}</p>
     <br />
