@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { supabase } from '@/lib/supabase'
-import FingerprintJS from '@fingerprintjs/fingerprintjs'
+import { get, set } from 'idb-keyval'
 
 const props = defineProps({
   articleId: Number,
@@ -9,17 +9,10 @@ const props = defineProps({
 
 const likes = ref(0)
 const liked = ref(false)
-const fp = ref(null)
 
 onMounted(async () => {
   if (!props.articleId) return
 
-  // gerar fingerprint
-  const agent = await FingerprintJS.load()
-  const result = await agent.get()
-  fp.value = result.visitorId
-
-  // contar likes totais
   const { count } = await supabase
     .from('ArticleLikes')
     .select('*', { count: 'exact', head: true })
@@ -27,49 +20,42 @@ onMounted(async () => {
 
   likes.value = count || 0
 
-  // verificar se já curtiu
-  const { data } = await supabase
-    .from('ArticleLikes')
-    .select('id')
-    .eq('article_id', props.articleId)
-    .eq('fingerprint', fp.value)
-    .maybeSingle()
-
-  liked.value = !!data
+  const local = await get(`like-${props.articleId}`)
+  liked.value = local?.liked || false
 })
 
 async function toggleLike() {
-  if (!fp.value) return
+  if (!props.articleId) return
 
   if (liked.value) {
-    // remover like
-    await supabase
-      .from('ArticleLikes')
-      .delete()
-      .eq('article_id', props.articleId)
-      .eq('fingerprint', fp.value)
+    await supabase.from('ArticleLikes').delete().eq('article_id', props.articleId)
 
     likes.value = Math.max(0, likes.value - 1)
     liked.value = false
   } else {
-    // adicionar like
     await supabase.from('ArticleLikes').insert({
       article_id: props.articleId,
-      fingerprint: fp.value,
     })
 
     likes.value++
     liked.value = true
   }
+
+  await set(`like-${props.articleId}`, {
+    id: props.articleId,
+    liked: liked.value,
+  })
 }
 </script>
 
 <template>
   <button
     @click="toggleLike"
-    class="flex items-center gap-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
+    class="flex items-center gap-2 px-3 py-1 border border-text rounded-2xl hover:bg-text-gray/10"
   >
-    <span>{{ liked ? '❤️' : '🤍' }}</span>
+    <span :class="{ 'text-accent': liked, 'text-bg': !liked }"
+      ><font-awesome-icon class="drop-shadow-[0_0_1px_black]" icon="heart" />
+    </span>
     <span>{{ likes }}</span>
   </button>
 </template>

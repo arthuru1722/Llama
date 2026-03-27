@@ -6,6 +6,7 @@ import authorComp from '@/components/authorComp.vue'
 import { supabase } from '@/lib/supabase'
 
 const materias = ref([])
+const cols = ref(3)
 
 onMounted(async () => {
   const { data, error } = await supabase
@@ -15,7 +16,33 @@ onMounted(async () => {
 
   if (!error) materias.value = data
   else console.error(error)
+
+  updateCols()
+  window.addEventListener('resize', updateCols)
 })
+
+const outrosGrid = computed(() => {
+  const c = cols.value
+  const lista = outros.value
+
+  if (lista.length === 0) return []
+
+  const minimo = 3
+
+  const alvo = Math.max(c * Math.ceil(minimo / c), minimo)
+
+  return lista.slice(0, Math.min(alvo, lista.length))
+})
+
+function updateCols() {
+  const w = window.innerWidth
+
+  if (w >= 1024)
+    cols.value = 3 // lg
+  else if (w >= 640)
+    cols.value = 2 // sm
+  else cols.value = 1
+}
 
 const autores = ref([])
 
@@ -33,11 +60,9 @@ const outros = computed(() => materias.value.filter((m) => m.id !== 21))
 <template>
   <main class="flex flex-col max-w-5xl mx-auto p-6 gap-4">
     <div class="grid grid-cols-2 md:flex md:flex-row justify-between">
-      <!-- autores -->
       <authorComp v-for="a in autores" :key="a.id" :name="a.name" :image="a.avatar" :bio="a.bio" />
     </div>
     <hr class="border-hr" />
-    <!-- destaque -->
     <mainComp
       v-if="destaque"
       :id="destaque.id"
@@ -48,10 +73,9 @@ const outros = computed(() => materias.value.filter((m) => m.id !== 21))
       :topics="destaque.topics"
     />
 
-    <!-- grid de outros -->
     <div class="grid pt-2 gap-x-10 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
       <cardComp
-        v-for="m in outros.slice(0, 3)"
+        v-for="m in outrosGrid"
         :key="m.id"
         :id="m.id"
         :title="m.title"
