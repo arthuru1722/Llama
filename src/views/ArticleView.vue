@@ -82,6 +82,8 @@ const html = computed(() => (article.value ? marked(article.value.content) : '')
         {{ article.summary }}
       </p>
 
+      <br>
+
       <AudioPlayer
         v-if="article.audio"
         :src="article.audio"
